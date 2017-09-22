@@ -9,17 +9,18 @@ import static java.lang.System.out;
  * Created by Alexander on 11.09.2017.
  */
 public class Task1and2 {
-    public static HashSet<Integer> nods;
-    public static HashSet<Integer> left;
-    public static HashSet<Integer> right;
-    public static HashSet<Integer> begins;
-    public static HashSet<Integer> ends;
-    public static HashSet<Triple> links;
-    public static HashMap<Integer, Integer> color;
-    public static HashMap<Integer, Integer> order;
-    public static HashMap<Integer, Node> Nods;
-    public static Node start;
-    public static Node finish;
+    private static HashSet<Integer> nods;
+    private static HashSet<Integer> left;
+    private static HashSet<Integer> right;
+    private static HashSet<Integer> begins;
+    private static HashSet<Integer> ends;
+    private static HashSet<Triple> links;
+    private static HashMap<Integer, Integer> color;
+    private static HashMap<Integer, Integer> order;
+    private static HashMap<Integer, Node> Nods;
+    private static Node start;
+    private static Node finish;
+    private static ArrayList<String> pathways;
 
     public static void main(String[] args) throws Exception{
         Scanner in  = new Scanner(System.in);
@@ -34,6 +35,7 @@ public class Task1and2 {
             links = new HashSet<>();
             Nods = new HashMap<>();
             HashSet<Triple> _links = new HashSet<>();
+            pathways = new ArrayList<>();
 
             out.println("Вводите ребра построчно, ввод окончите числом -1\n");
             out.println("Пример:\n8 5\n5 7\n7 6\n-1\n");
@@ -62,7 +64,9 @@ public class Task1and2 {
                 }
             }
 
-            if (begins.size() != 1) {
+            boolean addeddot = false;
+
+            if (begins.size() > 1) {
                 out.print("Было найдено " + begins.size() + " начальных точек:");
                 for (Integer obj : begins) {
                     out.print(obj + " ");
@@ -83,12 +87,16 @@ public class Task1and2 {
                             break;
                         }
                     }
+                    addeddot = true;
                 }else if(choose == 2){
                     continue;
                 }
+            }else if(begins.size() == 0){
+                out.print("Было найдено 0 начальных точек. Введите ребра заново");
+                continue;
             }
 
-            if (ends.size() != 1) {
+            if (ends.size() > 1) {
                 out.print("Было найдено " + ends.size() + " конечных точек:");
                 for (Integer obj : ends) {
                     out.print(obj + " ");
@@ -112,6 +120,9 @@ public class Task1and2 {
                 }else if(choose == 2){
                     continue;
                 }
+            }else if(ends.size() == 0){
+                out.print("Было найдено 0 конечных точек. Введите ребра заново");
+                continue;
             }
 
             boolean skip = false;
@@ -126,13 +137,10 @@ public class Task1and2 {
                         int choose = in.nextInt();
                         if (choose == 1) {
                             choosen = 1;
-//                            links.remove(link);
                         } else if (choose == 2) {
                             skip = true;
                             break;
                         }
-                    }else {
-//                        links.remove(link);
                     }
                 }else{
                     _links.add(link);
@@ -154,7 +162,7 @@ public class Task1and2 {
 
             order = new HashMap<>();
             for(Integer nod : nods){
-                order.put(nod,-1);
+                order.put(nod,0);
             }
             DFS(ends.iterator().next());
 
@@ -170,16 +178,39 @@ public class Task1and2 {
             fillTr();
             finish.tp = finish.tr;
             fillTp();
-            out.println("Вершины\nНомер | Ранний срок | Поздний срок | Резерв времени ");
+            out.println("Вершины\nНомер | Ранний срок | Поздний срок | Резерв времени |");
             for (Integer nod: nods){
                 Node Nod = Nods.get(nod);
                 Nod.p = Nod.tp - Nod.tr;
-                out.format("%11d %d %d %d\n",Nod.name,Nod.tr,Nod.tp,Nod.p);
+                out.format("%5d |%12d |%13d |%15d |\n",Nod.name,Nod.tr,Nod.tp,Nod.p);
             }
 
+            int maxord = 0;
+            for (Integer nod : nods) {
+                maxord = Math.max(order.get(nod),maxord);
+            }
 
+            out.println("Рёбра:");
+            int curOrder;
+            if(addeddot)
+                curOrder = 2;
+            else
+                curOrder = 1;
+            for(; curOrder < maxord+1; curOrder++) {
+                out.println("\nТекущий порядок: "+curOrder);
+                for (Integer nod : nods) {
+                    if (order.get(nod) == curOrder-1){
+                        for(Triple link:links){
+                            if(link.beg == nod)
+                                out.format("%5d |%12d |%13d\n",link.beg,link.end,link.weight);
+                        }
+                    }
+                }
+            }
 
-            int kek = 1;
+            criticalPath(new ArrayList<Integer>(),begins.iterator().next());
+
+            break;
         }
     }
 
@@ -239,6 +270,25 @@ public class Task1and2 {
                     queue.add(begining);
                     begining.tp = Math.min(begining.tp,cur.tp-link.weight);
                 }
+            }
+        }
+    }
+
+    private static void criticalPath(ArrayList<Integer> previous, int current){
+        previous.add(current);
+
+        if(current == ends.iterator().next()){
+            String s = "";
+            for(Integer node : previous){
+                s+=node+" ";
+            }
+            pathways.add(s);
+            return;
+        }
+
+        for(Triple link:links){
+            if(link.beg == current && Nods.get(link.end).p == 0){
+                criticalPath((ArrayList<Integer>)previous.clone(),link.end);
             }
         }
     }
