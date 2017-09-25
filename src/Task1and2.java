@@ -1,6 +1,3 @@
-import com.sun.javafx.binding.StringFormatter;
-
-import java.io.*;
 import java.util.*;
 
 import static java.lang.System.out;
@@ -21,6 +18,8 @@ public class Task1and2 {
     private static Node start;
     private static Node finish;
     private static ArrayList<String> pathways;
+    private static HashMap<Integer, Integer> path;
+    private static int cycle_end = 0,cycle_beg = 0;
 
     public static void main(String[] args) throws Exception{
         Scanner in  = new Scanner(System.in);
@@ -36,12 +35,13 @@ public class Task1and2 {
             Nods = new HashMap<>();
             HashSet<Triple> _links = new HashSet<>();
             pathways = new ArrayList<>();
+            path = new HashMap<>();
 
             out.println("Вводите ребра построчно, ввод окончите числом -1\n");
             out.println("Пример:\n8 5\n5 7\n7 6\n-1\n");
 
             out.println("Ввод:");
-            int cur = in.nextInt();
+            int cur = in.nextInt();//Считыванием все ребра
             while (cur != -1) {
                 int cur2 = in.nextInt();
                 int wei = in.nextInt();
@@ -55,6 +55,7 @@ public class Task1and2 {
                 cur = in.nextInt();
             }
 
+            //Делим на начальные и конечные точки
             for (Integer obj : nods) {
                 if (!right.contains(obj)) {
                     begins.add(obj);
@@ -64,8 +65,78 @@ public class Task1and2 {
                 }
             }
 
+            boolean skip = false;
+            int choosen = 0;
+
+            //Поиск петель
+            for(Triple link : links){
+                if(link.beg == link.end){
+                    if(choosen == 0) {
+                        out.println("Была найдена петля.");
+                        out.print("Варианты решения:\n1)Удалить все петли\n2)Ввести рёбра заново\n");
+                        out.print("Выбранный вариант: ");
+                        int choose = in.nextInt();
+                        if (choose == 1) {
+                            choosen = 1;
+                        } else if (choose == 2) {
+                            skip = true;
+                            break;
+                        }
+                    }
+                }else{
+                    _links.add(link);
+                }
+            }
+            //Если выбрано ввести все ребра заново
+            if(skip)
+                continue;
+            //Копируются ребра без петель
+            links = _links;
+
+            //Раскраска графа с целью поиска циклов
+            color = new HashMap<>();
+            for(Integer nod : nods){
+                color.put(nod,0);
+            }
+
+            if(begins.size() == 0){
+                for(Integer beg : nods)
+                if(findCycle(beg)){
+                    out.println("Был найден цикл, введите ребра заново.");
+                    ArrayList<Integer> cycle = new ArrayList<>();
+                    cycle.add(cycle_beg);
+                    for (int v=cycle_end; v!=cycle_beg; v=path.get(v))
+                        cycle.add(v);
+                    cycle.add(cycle_end);
+                    for (int i=cycle.size()-1; i>=0; i--)
+                        out.print(cycle.get(i)+1+" ");
+                    out.print("\n");
+                    continue;
+                }
+            }else{
+                int siz = begins.size();
+                int beg = 0;
+                for(int i = 0; i < siz; i++)
+                    beg = begins.iterator().next();
+                    if(findCycle(beg)){
+                        out.println("Был найден цикл, введите ребра заново.");
+                        ArrayList<Integer> cycle = new ArrayList<>();
+                        cycle.add(cycle_beg);
+                        for (int v=cycle_end; v!=cycle_beg; v=path.get(v))
+                            cycle.add(v);
+                        cycle.add(cycle_end);
+                        for (int i=cycle.size()-1; i>=0; i--)
+                            out.print(cycle.get(i)+1+" ");
+                        out.print("\n");
+                        continue;
+                    }
+            }
+
+
+            //Флаг на то что была добавлена фиктивная точка на место начальной
             boolean addeddot = false;
 
+            //Если нашлось больше чем одна начальная точка
             if (begins.size() > 1) {
                 out.print("Было найдено " + begins.size() + " начальных точек:");
                 for (Integer obj : begins) {
@@ -91,11 +162,14 @@ public class Task1and2 {
                 }else if(choose == 2){
                     continue;
                 }
-            }else if(begins.size() == 0){
-                out.print("Было найдено 0 начальных точек. Введите ребра заново");
+            }
+            //Если не было найдено начальной точки
+            else if(begins.size() == 0){
+                out.println("Было найдено 0 начальных точек. Введите ребра заново");
                 continue;
             }
 
+            //Было найдено больше одной конечной точки
             if (ends.size() > 1) {
                 out.print("Было найдено " + ends.size() + " конечных точек:");
                 for (Integer obj : ends) {
@@ -120,52 +194,22 @@ public class Task1and2 {
                 }else if(choose == 2){
                     continue;
                 }
-            }else if(ends.size() == 0){
-                out.print("Было найдено 0 конечных точек. Введите ребра заново");
+            }
+            //Не было найдено конечной точки
+            else if(ends.size() == 0){
+                out.println("Было найдено 0 конечных точек. Введите ребра заново");
                 continue;
             }
 
-            boolean skip = false;
-            int choosen = 0;
-
-            for(Triple link : links){
-                if(link.beg == link.end){
-                    if(choosen == 0) {
-                        out.println("Была найдена петля.");
-                        out.print("Варианты решения:\n1)Удалить все петли\n2)Ввести рёбра заново\n");
-                        out.print("Выбранный вариант: ");
-                        int choose = in.nextInt();
-                        if (choose == 1) {
-                            choosen = 1;
-                        } else if (choose == 2) {
-                            skip = true;
-                            break;
-                        }
-                    }
-                }else{
-                    _links.add(link);
-                }
-            }
-            if(skip)
-                continue;
-            links = _links;
-
-            color = new HashMap<>();
-            for(Integer nod : nods){
-                color.put(nod,0);
-            }
-            int beg = begins.iterator().next();
-            if(findCycle(beg)){
-                out.println("Был найден цикл, введите ребра заново.");
-                continue;
-            }
-
+            //Порядок рёбер
             order = new HashMap<>();
             for(Integer nod : nods){
                 order.put(nod,0);
             }
+            //Упорядочивание вершин
             DFS(ends.iterator().next());
 
+            //Упорядочивание ребер в зависимости от вершин из которых он выходит
             for(Integer nod:nods){
                 Node tmp = new Node(nod);
                 if(nod.equals(begins.iterator().next()))
@@ -175,22 +219,32 @@ public class Task1and2 {
                 Nods.put(nod,tmp);
             }
 
+            //Заполняем раннее время
             fillTr();
+            //Раннее время конечной точки равно позднему времени
             finish.tp = finish.tr;
+            //Заполняем позднее время
             fillTp();
-            out.println("Вершины\nНомер | Ранний срок | Поздний срок | Резерв времени |");
+
+            //Выводим список вершин с параметрами
+            out.println("Вершины:\nНомер | Ранний срок | Поздний срок | Резерв времени |");
             for (Integer nod: nods){
                 Node Nod = Nods.get(nod);
                 Nod.p = Nod.tp - Nod.tr;
                 out.format("%5d |%12d |%13d |%15d |\n",Nod.name,Nod.tr,Nod.tp,Nod.p);
             }
 
+            out.println("Начальная вершина:" + begins.iterator().next());
+            out.println("Конечная вершина:" + ends.iterator().next());
+
+            //Находим максимальный порядок
             int maxord = 0;
             for (Integer nod : nods) {
                 maxord = Math.max(order.get(nod),maxord);
             }
 
-            out.println("Рёбра:");
+            //Выводим ребра с порядком
+            out.print("\nРёбра:");
             int curOrder;
             if(addeddot)
                 curOrder = 2;
@@ -202,25 +256,60 @@ public class Task1and2 {
                     if (order.get(nod) == curOrder-1){
                         for(Triple link:links){
                             if(link.beg == nod)
-                                out.format("%5d |%12d |%13d\n",link.beg,link.end,link.weight);
+                                out.format("%5d |%12d |%13d|%12d|\n",link.beg,link.end,link.weight,link.fullreserv);
                         }
                     }
                 }
             }
 
-            criticalPath(new ArrayList<Integer>(),begins.iterator().next());
+            for(Triple link : links){
+                link.fullreserv = Nods.get(link.end).tp - Nods.get(link.beg).tr - link.weight;
+            }
+
+            //Ищем критический путь
+            criticalPath(new ArrayList<>(),begins.iterator().next());
+
+            //Выводим число критических путей
+            int quantity = pathways.size();
+            out.println("\nБыло найдено " + quantity + " критических путей.");
+
+            //Выводим по очереди найденные пути
+            if(quantity != 0) {
+                out.println("Найденные критические пути:");
+                int leng = 0;
+                String p = "";
+                for (String s : pathways) {
+                    p+=s + " ";
+                    out.print(s);
+                }
+                String[] sp = p.split(" ");
+                for(int i = 0 ; i < sp.length - 1; i++){
+                    int b = Integer.parseInt(sp[i]);
+                    int e = Integer.parseInt(sp[i+1]);
+                    for(Triple link:links)
+                        if(link.beg == b && link.end == e)
+                            leng += link.weight;
+                }
+                out.print(" Длина = "+leng+"\n");
+            }
 
             break;
         }
     }
 
+    //Поиск цикла методом раскраски
     private static boolean findCycle(int cur){
         color.put(cur,1);
         for(Triple link : links){
             if(link.beg == cur){
-                if(color.get(link.end) == 0 && findCycle(link.end)){
-                    return true;
+                int to = link.end;
+                if(color.get(link.end) == 0){
+                    path.put(to,cur);
+                    if(findCycle(link.end))
+                        return true;
                 }else if(color.get(link.end) == 1){
+                    cycle_end = cur;
+                    cycle_beg = to;
                     return true;
                 }
             }
@@ -230,6 +319,7 @@ public class Task1and2 {
         return false;
     }
 
+    //Поиск длиннейшего пути до вершины
     private static int DFS(int cur){
         int max = -1;
         for(Triple link : links){
@@ -244,8 +334,9 @@ public class Task1and2 {
         return max + 1;
     }
 
+    //Заполняем раннее время у вершин обходом в ширину от начальной точки
     private static void fillTr(){
-        LinkedList<Node> queue = new LinkedList<Node>();
+        LinkedList<Node> queue = new LinkedList<>();
         queue.add(start);
         while(!queue.isEmpty()) {
             Node cur = queue.poll();
@@ -259,8 +350,9 @@ public class Task1and2 {
         }
     }
 
+    //Заполняем позднее время у вершин обходом в ширину от конечной точки
     private static void fillTp(){
-        LinkedList<Node> queue = new LinkedList<Node>();
+        LinkedList<Node> queue = new LinkedList<>();
         queue.add(finish);
         while(!queue.isEmpty()) {
             Node cur = queue.poll();
@@ -274,9 +366,9 @@ public class Task1and2 {
         }
     }
 
+    //Поиск критического пути обходом в глубину, без сохранения посещенных вершин
     private static void criticalPath(ArrayList<Integer> previous, int current){
         previous.add(current);
-
         if(current == ends.iterator().next()){
             String s = "";
             for(Integer node : previous){
@@ -287,24 +379,28 @@ public class Task1and2 {
         }
 
         for(Triple link:links){
-            if(link.beg == current && Nods.get(link.end).p == 0){
+            if(link.beg == current && link.fullreserv == 0){
                 criticalPath((ArrayList<Integer>)previous.clone(),link.end);
             }
         }
     }
 
+    //Ребро начало, конец, вес
     private static class Triple{
         private int beg;
         private int end;
         private int weight;
+        private int fullreserv;
 
         private Triple(int _b,int _e, int _w){
             beg = _b;
             end = _e;
             weight = _w;
+            fullreserv = 0;
         }
     }
 
+    //Узел название, раннее время, конечное время, резерв
     private static class Node{
         private int name;
         private int tr;
